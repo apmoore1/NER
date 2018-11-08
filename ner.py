@@ -14,6 +14,7 @@ from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.models import CrfTagger
 from allennlp.training.trainer import Trainer, TensorboardWriter
 from allennlp.commands.evaluate import evaluate
+from allennlp.training.learning_rate_schedulers import LearningRateWithoutMetricsWrapper
 from tensorboardX import SummaryWriter
 import torch
 from torch import optim
@@ -40,7 +41,7 @@ total_embedding_dim = word_embedding_dim + cnn_output_dim
 # LSTM size is that of Ma and Hovy
 lstm_dim = 200
 
-cuda_device = -1
+cuda_device = 0
 
 # Dropout applies dropout after the encoded text and after the word embedding.
 
@@ -102,12 +103,16 @@ model = CrfTagger(vocab, word_embeddings, lstm_wrapper,
                   label_encoding=label_encoding, dropout=dropout, 
                   constrain_crf_decoding=constrain_crf_decoding)
 
-optimizer = optim.Adam(model.parameters())
-iterator = BucketIterator(batch_size=32, sorting_keys=[("tokens", "num_tokens")])
+optimizer = optim.SGD(model.parameters(), lr=0.015, weight_decay=1e-8)
+schedule = LearningRateWithoutMetricsWrapper(torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.9524))
+iterator = BucketIterator(batch_size=64, sorting_keys=[("tokens", "num_tokens")])
 iterator.index_with(vocab)
 
+import time
+t = time.time()
 with tempfile.TemporaryDirectory(dir=Path('.')) as temp_dir:
     trainer = Trainer(model=model, grad_clipping=5.0, 
+                    learning_rate_scheduler=schedule,
                     serialization_dir=temp_dir,
                     optimizer=optimizer,
                     iterator=iterator,
@@ -115,12 +120,16 @@ with tempfile.TemporaryDirectory(dir=Path('.')) as temp_dir:
                     validation_dataset=dev_dataset,
                     shuffle=True,
                     cuda_device=cuda_device,
-                    patience=10,
-                    num_epochs=5)
+                    patience=3,
+                    num_epochs=1000)
+    for param_group in optimizer.param_groups:
+        print(param_group['lr'])
 
     trainer._tensorboard = TensorboardWriter(train_log=train_log, 
                                             validation_log=validation_log)
     interesting_metrics = trainer.train()
+    for param_group in optimizer.param_groups:
+        print(param_group['lr'])
     best_model_weights = Path(temp_dir, 'best.th')
     best_model_state = torch.load(best_model_weights)
     model.load_state_dict(best_model_state)
@@ -140,3 +149,4 @@ validation_log.close()
 print('done')
 print('finish')
 print(f'{interesting_metrics}')
+print(f'{time.time() - t}')
