@@ -21,6 +21,9 @@ Test:
 from pathlib import Path
 from typing import List, Tuple
 
+import numpy as np
+from sklearn.model_selection import train_test_split
+
 def read_data(data_fp: Path) -> List[Tuple[str, str]]:
     all_sentence_data = []
     with data_fp.open('r') as ner_data:
@@ -59,4 +62,52 @@ if __name__ == '__main__':
     assert len(dev_data) == 3250
     test_data = read_data(Path(data_dir, 'test.txt'))
     assert len(test_data) == 3453
+
+
+'''
+    @classmethod
+    def get_num_classes(cls, dataset: List[Dict[str, Any]]) -> int:
+        '''
+        Given the output of :py:func:`neural_ner.util.CoNLL.readCoNLL`
+        returns the number of NER classes in the dataset.
+        '''
+        class_data = []
+        for sentence in dataset:
+            class_data.extend(sentence['NER_BIO'])
+        return len(set(class_data))
+
+    @classmethod
+    def random_shuffle(cls, train: List[Dict[str, Any]], dev: List[Dict[str, Any]], 
+                       test: List[Dict[str, Any]], test_size: float = 0.2, 
+                       dev_size:float = 0.2, 
+                       random_state: 'np.random.RandomState' = np.random.RandomState()
+                       ) -> List[List[Dict[str, Any]]]:
+        '''
+        Combines the train, development and test data and then re-splits the 
+        data into different train, development and test data.
+        
+        :param train: The output of :py:func:`neural_ner.util.CoNLL.readCoNLL`
+        :param dev: The output of :py:func:`neural_ner.util.CoNLL.readCoNLL`
+        :param test: The output of :py:func:`neural_ner.util.CoNLL.readCoNLL`
+        :param test_size: Size of the test set as a fraction of all of the data
+        :param dev_size: Size of the development set as a fraction of the 
+                        train data (train data created after the initial data
+                        has been split into train and test splits)
+        :param random_state: Random state for splitting the data. Default 
+                            is completely random.
+        :return: A list of size 3 representing train, dev, and test data. 
+                Where the data is in the same format as the original input.
+        '''
+        num_classes = cls.get_num_classes(train)
+        all_data = train + dev + test
+        train, test = train_test_split(all_data, test_size=test_size,
+                                       random_state=random_state)
+        train, dev = train_test_split(train, test_size=dev_size,
+                                      random_state=random_state)
+        for dataset in [train, dev, test]:
+            if cls.get_num_classes(dataset) != num_classes:
+                return cls.random_shuffle(train, dev, test, test_size, dev_size,
+                                          random_state)
+        return train, dev, test
+'''
             
