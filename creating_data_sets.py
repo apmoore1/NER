@@ -148,6 +148,32 @@ def data_to_file(sentence_label_data: List[Tuple[str, str]],
 def create_n_dataset_folders(data_dir: Path, n_copies: int,
                              copy_dir: Path, **shuffle_kwargs
                              ) -> None:
+    '''
+    Creates *n* number of dataset folders based on the CoNLL 
+    format within the given `copy_dir` within seperate folders 
+    named 0-*n*.
+
+    The setup of these dataset folders are the same as the 
+    given data_dir which should contain train.txt, dev.txt 
+    and a test.txt files. The difference being that these 
+    copy directories will copy the data by re-shuffling 
+    into different train, dev, test splits where the 
+    shuffling is controlled by the :py:func:`shuffle_data`
+    function and the keywords arguments to this function 
+    are input to the :py:func:`shuffle_data` function.
+
+    :param data_dir: The original data directory which 
+                     the data is copied from.
+    :param n_copies: Number of times the directory is 
+                     copied.
+    :param copy_dir: Root directory to store all the 
+                     copy directories.
+    :param shuffle_kwargs: Keyword arguments to pass 
+                           to :py:func:`shuffle_data`
+                           which shuffles the data 
+                           before copying.
+    :returns: Nothing.
+    '''
     copy_dir.mkdir(parents=True, exist_ok=True)
     train_data = read_data(Path(data_dir, 'train.txt'))
     dev_data = read_data(Path(data_dir, 'dev.txt'))
