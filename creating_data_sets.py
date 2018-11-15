@@ -1,15 +1,7 @@
 '''
-I need to copy the function for number of classes and shuffling from the 
-previous project:
-https://github.com/apmoore1/bilstm-cnn-crf-ner/blob/master/neural_ner/neuralnets/BiLSTM.py
-
-These need to be adapted. From the looks of things we cannot use the strattified
-approach but just use random shuffling and then check if there are the same 
-number of classes.
-
-We are going to have to convert the data at first in to (sentence: NER labels) 
-and then shuffle and check and then convert back into text files. We want to 
-make sure that this is completely random.
+We now need to create lots of directories containing 1. train.txt, 2. dev.txt, 3. test.txt
+I think placing all of these in one master directory would be best and label 
+each directory with a number
 
 Train set should be of size:
 14041
@@ -25,6 +17,17 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 def read_data(data_fp: Path) -> List[Tuple[str, str]]:
+    '''
+    Parses the CoNLL formatted file at the given file 
+    path and turns the file into a A list of tuples 
+    where the first String is the sentence and the 
+    second are the related word level labels.
+
+    :param data_fp: Path to a CoNLL formatted file.
+    :returns: A list of tuples where the first String 
+              is the sentence and the second are the 
+              related word level labels
+    '''
     all_sentence_data = []
     with data_fp.open('r') as ner_data:
         sentence_words = []
@@ -141,6 +144,27 @@ def data_to_file(sentence_label_data: List[Tuple[str, str]],
                 else:
                     data_file.write(f'\n{word} -X- -X- {label}')
             data_file.write('\n')
+
+def create_n_dataset_folders(data_dir: Path, n_copies: int,
+                             copy_dir: Path, **shuffle_kwargs
+                             ) -> None:
+    copy_dir.mkdir(parents=True, exist_ok=True)
+    train_data = read_data(Path(data_dir, 'train.txt'))
+    dev_data = read_data(Path(data_dir, 'dev.txt'))
+    test_data = read_data(Path(data_dir, 'test.txt'))
+    all_data = train_data + dev_data + test_data
+    for index in range(n_copies):
+        all_temp_data = shuffle_data(all_data, **shuffle_kwargs)
+        file_names = ['train.txt', 'dev.txt', 'test.txt']
+
+        new_data_dir = Path(copy_dir, f'{index}')
+        new_data_dir.mkdir(parents=True, exist_ok=True)
+
+        for file_name, temp_data in zip(file_names, all_temp_data):
+            print(file_name)
+            print(len(temp_data))
+            data_to_file(temp_data, Path(new_data_dir, file_name))
+
             
 if __name__ == '__main__':
     data_dir = Path('..', 'conll_2003')
@@ -162,6 +186,9 @@ if __name__ == '__main__':
     data_to_file(train, Path(data_dir, 'new_train.txt'))
     data_to_file(dev, Path(data_dir, 'new_dev.txt'))
     data_to_file(test, Path(data_dir, 'new_test.txt'))
+
+    copy_dir = Path(data_dir, 'copy_dir')
+    create_n_dataset_folders(data_dir, 2, copy_dir)
     print('done')
 
 
