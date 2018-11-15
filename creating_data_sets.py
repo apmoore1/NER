@@ -1,7 +1,7 @@
 '''
-We now need to create lots of directories containing 1. train.txt, 2. dev.txt, 3. test.txt
-I think placing all of these in one master directory would be best and label 
-each directory with a number
+Need to create function that checks that the train, dev, test datasets folders 
+contains data that is different or how many of them are the same as it might be 
+diffifcult to get 200 directories that are different.
 
 Train set should be of size:
 14041
