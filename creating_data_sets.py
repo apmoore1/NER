@@ -1,8 +1,4 @@
 '''
-Need to create function that checks that the train, dev, test datasets folders 
-contains data that is different or how many of them are the same as it might be 
-diffifcult to get 200 directories that are different.
-
 Train set should be of size:
 14041
 Dev:
@@ -12,6 +8,7 @@ Test:
 '''
 from pathlib import Path
 from typing import List, Tuple
+import re
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -191,7 +188,54 @@ def create_n_dataset_folders(data_dir: Path, n_copies: int,
             print(len(temp_data))
             data_to_file(temp_data, Path(new_data_dir, file_name))
 
-            
+def test_n_dataset_folders(copy_dir: Path
+                           ) -> List[Tuple[Path, Path]]:
+    '''
+    Given the directory that the data was copied *n* times 
+    it will test each created copy directory with each 
+    copy directory and return a List of a Tuples that 
+    contain identical data directories if any.
+
+    :param copy_dir: Root directory to that stores all of 
+                      the copy directories.
+    :returns: A List of Tuples of two Paths which are 
+              Paths to two identical directories that 
+              are different copy directories. If the
+              List is empty then none of the copy 
+              directories are the same.
+    '''
+    def compare_data(dir_iter, current_dir
+                     ) -> List[Tuple[Path, Path]]:
+        same_dirs = []
+        for other_copy_dir in dir_iter:
+            if other_copy_dir == current_dir:
+                continue
+            if not other_copy_dir.is_dir():
+                continue
+            if not re.match('\d+', other_copy_dir.name):
+                continue
+
+            file_names = ['train.txt', 'dev.txt', 'test.txt']
+            for file_name in file_names:
+                data = read_data(Path(current_dir, file_name))
+                data_1 = read_data(Path(other_copy_dir, file_name))
+                if data == data_1:
+                    same_dirs.append((current_dir, other_copy_dir))
+                    break
+        return same_dirs
+                    
+    identical_dirs = []
+    for data_copy_dir in copy_dir.iterdir():
+        if not data_copy_dir.is_dir():
+            continue
+        if not re.match('\d+', data_copy_dir.name):
+            continue
+
+        identical_dirs.extend(compare_data(copy_dir.iterdir(), 
+                                           data_copy_dir))
+    return identical_dirs
+        
+
 if __name__ == '__main__':
     data_dir = Path('..', 'conll_2003')
     train_data = read_data(Path(data_dir, 'train.txt'))
@@ -215,6 +259,7 @@ if __name__ == '__main__':
 
     copy_dir = Path(data_dir, 'copy_dir')
     create_n_dataset_folders(data_dir, 2, copy_dir)
+    print(test_n_dataset_folders(copy_dir))
     print('done')
 
 
