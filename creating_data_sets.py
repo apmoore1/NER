@@ -184,8 +184,6 @@ def create_n_dataset_folders(data_dir: Path, n_copies: int,
         new_data_dir.mkdir(parents=True, exist_ok=True)
 
         for file_name, temp_data in zip(file_names, all_temp_data):
-            print(file_name)
-            print(len(temp_data))
             data_to_file(temp_data, Path(new_data_dir, file_name))
 
 def test_n_dataset_folders(copy_dir: Path
@@ -214,6 +212,7 @@ def test_n_dataset_folders(copy_dir: Path
                 continue
             if not re.match('\d+', other_copy_dir.name):
                 continue
+            print(f'Comparing to {other_copy_dir.name}')
 
             file_names = ['train.txt', 'dev.txt', 'test.txt']
             for file_name in file_names:
@@ -225,7 +224,8 @@ def test_n_dataset_folders(copy_dir: Path
         return same_dirs
                     
     identical_dirs = []
-    for data_copy_dir in copy_dir.iterdir():
+    for progress_index, data_copy_dir in enumerate(copy_dir.iterdir()):
+        print(f'in {data_copy_dir.name}')
         if not data_copy_dir.is_dir():
             continue
         if not re.match('\d+', data_copy_dir.name):
@@ -233,11 +233,35 @@ def test_n_dataset_folders(copy_dir: Path
 
         identical_dirs.extend(compare_data(copy_dir.iterdir(), 
                                            data_copy_dir))
+        print(f'Progress: {identical_dirs}')
+        print(f'Number done: {progress_index}')
     return identical_dirs
         
 
+import argparse
+
+def parse_path(path_string: str) -> Path:
+    path_string = Path(path_string).resolve()
+    return path_string
+
 if __name__ == '__main__':
-    data_dir = Path('..', 'conll_2003')
+    parser = argparse.ArgumentParser()
+    data_dir_help = "The directory that stores the train, dev, and test "\
+                    "files for the CoNLL 2003 dataset"
+    glove_help = "The path to the 100 dimension Glove Embedding"
+    copy_dir_help = "Path to store all of the copy directories within"
+    num_copies_help = "The number of copy directories to create"
+
+    parser.add_argument("data_dir", help=data_dir_help, type=parse_path)
+    #parser.add_argument("glove_file", help=glove_help, type=parse_path)
+    parser.add_argument("copy_dir", help=copy_dir_help, type=parse_path)
+    parser.add_argument("num_copies", help=num_copies_help, type=int)
+    args = parser.parse_args()
+    
+    data_dir = args.data_dir
+    copy_dir = args.copy_dir
+    num_copy_directories = args.num_copies
+
     train_data = read_data(Path(data_dir, 'train.txt'))
     assert len(train_data) == 14041
     dev_data = read_data(Path(data_dir, 'dev.txt'))
@@ -246,20 +270,20 @@ if __name__ == '__main__':
     assert len(test_data) == 3453
     all_data = train_data + dev_data + test_data
     assert len(all_data) == (14041 + 3250 + 3453)
-    train, dev, test = shuffle_data(all_data)
-    print(f'{len(train)} {len(dev)} {len(test)}')
-    print(train[0])
-    print()
-    print(dev[0])
-    print()
-    print(test[0])
-    data_to_file(train, Path(data_dir, 'new_train.txt'))
-    data_to_file(dev, Path(data_dir, 'new_dev.txt'))
-    data_to_file(test, Path(data_dir, 'new_test.txt'))
+    #train, dev, test = shuffle_data(all_data)
+    #print(f'{len(train)} {len(dev)} {len(test)}')
+    #print(train[0])
+    #print()
+    #print(dev[0])
+    #print()
+    #print(test[0])
+    #data_to_file(train, Path(data_dir, 'new_train.txt'))
+    #data_to_file(dev, Path(data_dir, 'new_dev.txt'))
+    #data_to_file(test, Path(data_dir, 'new_test.txt'))
 
-    copy_dir = Path(data_dir, 'copy_dir')
-    create_n_dataset_folders(data_dir, 2, copy_dir)
-    print(test_n_dataset_folders(copy_dir))
-    print('done')
+    create_n_dataset_folders(data_dir, num_copy_directories, copy_dir)
+    num_identical_copies = len(test_n_dataset_folders(copy_dir))
+    print(f'Created {num_copy_directories} and {num_identical_copies} are '
+          'identical')
 
 

@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 import tempfile
+from typing import List, Tuple
+import random
 
 from allennlp.common.file_utils import cached_path
 from allennlp.data.dataset_readers import Conll2003DatasetReader
@@ -19,10 +21,26 @@ from allennlp.training.learning_rate_schedulers import LearningRateWithoutMetric
 from tensorboardX import SummaryWriter
 import torch
 from torch import optim
+import numpy as np
 
+
+def set_random_env(cuda: int, random_seed: int, numpy_seed: int, 
+                   torch_seed: int):
+    '''
+
+    Reference:
+    https://github.com/allenai/allennlp/blob/master/allennlp/common/util.py#L178-L207
+    '''
+    random.seed(random_seed)
+    np.random.seed(numpy_seed)
+    torch.manual_seed(torch_seed)
+    if cuda == 0:
+        torch.cuda.manual_seed_all(torch_seed)
 
 def predict(cuda_device: int, char_encoder: str, data_dir: Path,
-            glove_path: Path):
+            glove_path: Path, random_seed: int = 13370, 
+            numpy_seed: int = 1337, torch_seed: int = 133
+            ) -> List[Tuple[float, float, str]]:
     '''
     This allows you to train an NER model that has either a CNN character 
     encoder or LSTM based on the `char_encoder` argument. The encoded 
@@ -45,6 +63,10 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
                      format where the NER labels are in BIO format.
     :param glove_path: A file path to the `Glove 6 billion word vectors 100D \
                        <https://nlp.stanford.edu/projects/glove/>`_
+    :returns: The results as a list of tuples which are 
+              (dev f1 score, test f1 score, char encoder) where the list 
+              represents a different trained model using the same train, dev, 
+              and test split but different random seed.
     '''
     #
     # The dataset we are using has already been formatted from IOB1 to BIO
@@ -57,7 +79,7 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
 
     char_embedding_dim = 30
     cnn_window_size = (3,)
-    cnn_filters = 30
+    cnn_filters = 50
     cnn_output_dim = len(cnn_window_size) * cnn_filters
 
     lstm_char_dim = 25
@@ -65,7 +87,7 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
 
     word_embedding_dim = 100
     # LSTM size is that of Ma and Hovy
-    lstm_dim = 200
+    lstm_dim = 100
 
     # Dropout applies dropout after the encoded text and after the word embedding.
 
@@ -146,6 +168,7 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
     iterator.index_with(vocab)
 
     with tempfile.TemporaryDirectory(dir=Path('.')) as temp_dir:
+        set_random_env(cuda_device, random_seed, numpy_seed, torch_seed)
         trainer = Trainer(model=model, grad_clipping=5.0, 
                         learning_rate_scheduler=schedule,
                         serialization_dir=temp_dir,
@@ -168,10 +191,11 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
         dev_result = evaluate(model, dev_dataset, iterator, cuda_device)
         test_f1 = test_result['f1-measure-overall']
         dev_f1 = dev_result['f1-measure-overall']
-        result_data.append((dev_f1, test_f1))
+        result_data.append((dev_f1, test_f1, char_encoder))
 
     with result_fp.open('w+') as json_file:
         json.dump(result_data, json_file)
+    return result_data
     #train_log.close()
     #validation_log.close()
 
@@ -184,10 +208,51 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
 
 import argparse
 
+def parse_path(path_string: str) -> Path:
+    path_string = Path(path_string).resolve()
+    return path_string
+
 if __name__ == '__main__':
-    glove_fp = Path('/home/andrew/glove.6B/glove.6B.100d.txt')
-    data_dir = Path('/', 'home', 'andrew', 'Documents', 'conll_2003')
+    data_dir_help = "The directory that stores the train, dev, and test "\
+                    "files for the CoNLL 2003 dataset"
+    glove_help = "The path to the 100 dimension Glove Embedding"
+    num_runs_help = "Number of times to train and predict on the dev and test"\
+                    " set. Each run will be with a different random seed."
+
     parser = argparse.ArgumentParser()
-    parser.parse_args()
-    predict(-1, 'lstm', data_dir, glove_fp)
-    print('done')
+    parser.add_argument("data_dir", help=data_dir_help, type=parse_path)
+    parser.add_argument("glove_file", help=glove_help, type=parse_path)
+    parser.add_argument("char_encoder", help="Character encoder to use", 
+                        type=str, choices=['lstm', 'cnn'])
+    parser.add_argument("num_runs", help=num_runs_help, type=int)
+    parser.add_argument("--cuda", action="store_true")
+    parser.add_argument("--verbose", action="store_true")
+    args = parser.parse_args()
+
+    data_dir = args.data_dir
+    glove_fp = args.glove_file
+    char_encoder = args.char_encoder
+    num_runs = args.num_runs
+    cuda = -1
+    if args.cuda:
+        cuda = 0
+    
+    # Ensure different seeds for each run
+    random_seeds = random.sample(range(1, 100000), num_runs)
+    numpy_seeds = random.sample(range(1, 100000), num_runs)
+    torch_seeds = random.sample(range(1, 100000), num_runs)
+
+    for run in range(num_runs):
+        random_seed = random_seeds[run]
+        numpy_seed = numpy_seeds[run]
+        torch_seed = torch_seeds[run]
+
+        import time
+        t = time.time()
+        result = predict(cuda, char_encoder, data_dir, glove_fp, random_seed,
+                         numpy_seed, torch_seed)
+        print(time.time() - t)
+        if args.verbose:
+            print(f'Run {run} completed. Results so far:\n{result}')
+    if args.verbose:
+        print('Finished')
