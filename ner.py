@@ -179,7 +179,7 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
                         validation_dataset=dev_dataset,
                         shuffle=True,
                         cuda_device=cuda_device,
-                        patience=25,
+                        patience=5,
                         num_epochs=1000)
 
         #trainer._tensorboard = TensorboardWriter(train_log=train_log, 
@@ -202,7 +202,7 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
 
     #print('done')
     #print('finish')
-    print(f'{interesting_metrics}')
+    
     #print(f'{time.time() - t}')
 
 
