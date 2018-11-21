@@ -168,7 +168,7 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
     iterator = BucketIterator(batch_size=64, sorting_keys=[("tokens", "num_tokens")])
     iterator.index_with(vocab)
 
-    with tempfile.TemporaryDirectory(dir=Path('.')) as temp_dir:
+    with tempfile.TemporaryDirectory(dir=Path(data_dir)) as temp_dir:
         set_random_env(cuda_device, random_seed, numpy_seed, torch_seed)
         trainer = Trainer(model=model, grad_clipping=5.0, 
                         learning_rate_scheduler=schedule,
@@ -196,6 +196,7 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
 
     with result_fp.open('w+') as json_file:
         json.dump(result_data, json_file)
+    print(f'{interesting_metrics}')
     return result_data
     #train_log.close()
     #validation_log.close()
