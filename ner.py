@@ -1,3 +1,4 @@
+import argparse
 import json
 from pathlib import Path
 import tempfile
@@ -27,7 +28,6 @@ import numpy as np
 def set_random_env(cuda: int, random_seed: int, numpy_seed: int, 
                    torch_seed: int):
     '''
-
     Reference:
     https://github.com/allenai/allennlp/blob/master/allennlp/common/util.py#L178-L207
     '''
@@ -169,17 +169,17 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
 
     with tempfile.TemporaryDirectory(dir=Path('.')) as temp_dir:
         set_random_env(cuda_device, random_seed, numpy_seed, torch_seed)
-        trainer = Trainer(model=model, grad_clipping=5.0, 
-                        learning_rate_scheduler=schedule,
-                        serialization_dir=temp_dir,
-                        optimizer=optimizer,
-                        iterator=iterator,
-                        train_dataset=train_dataset,
-                        validation_dataset=dev_dataset,
-                        shuffle=True,
-                        cuda_device=cuda_device,
-                        patience=3,
-                        num_epochs=1000)
+        trainer = Trainer(model=model,
+                          learning_rate_scheduler=schedule,
+                          serialization_dir=temp_dir,
+                          optimizer=optimizer,
+                          iterator=iterator,
+                          train_dataset=train_dataset,
+                          validation_dataset=dev_dataset,
+                          shuffle=True,
+                          cuda_device=cuda_device,
+                          patience=3,
+                          num_epochs=1000)
 
         #trainer._tensorboard = TensorboardWriter(train_log=train_log, 
         #                                        validation_log=validation_log)
@@ -204,9 +204,6 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
     #print(f'{interesting_metrics}')
     #print(f'{time.time() - t}')
 
-
-
-import argparse
 
 def parse_path(path_string: str) -> Path:
     path_string = Path(path_string).resolve()
@@ -246,12 +243,8 @@ if __name__ == '__main__':
         random_seed = random_seeds[run]
         numpy_seed = numpy_seeds[run]
         torch_seed = torch_seeds[run]
-
-        import time
-        t = time.time()
         result = predict(cuda, char_encoder, data_dir, glove_fp, random_seed,
                          numpy_seed, torch_seed)
-        print(time.time() - t)
         if args.verbose:
             print(f'Run {run} completed. Results so far:\n{result}')
     if args.verbose:
