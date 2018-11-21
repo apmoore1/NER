@@ -28,6 +28,7 @@ import numpy as np
 def set_random_env(cuda: int, random_seed: int, numpy_seed: int, 
                    torch_seed: int):
     '''
+
     Reference:
     https://github.com/allenai/allennlp/blob/master/allennlp/common/util.py#L178-L207
     '''
@@ -169,17 +170,17 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
 
     with tempfile.TemporaryDirectory(dir=Path('.')) as temp_dir:
         set_random_env(cuda_device, random_seed, numpy_seed, torch_seed)
-        trainer = Trainer(model=model,
-                          learning_rate_scheduler=schedule,
-                          serialization_dir=temp_dir,
-                          optimizer=optimizer,
-                          iterator=iterator,
-                          train_dataset=train_dataset,
-                          validation_dataset=dev_dataset,
-                          shuffle=True,
-                          cuda_device=cuda_device,
-                          patience=3,
-                          num_epochs=1000)
+        trainer = Trainer(model=model, grad_clipping=5.0, 
+                        learning_rate_scheduler=schedule,
+                        serialization_dir=temp_dir,
+                        optimizer=optimizer,
+                        iterator=iterator,
+                        train_dataset=train_dataset,
+                        validation_dataset=dev_dataset,
+                        shuffle=True,
+                        cuda_device=cuda_device,
+                        patience=25,
+                        num_epochs=1000)
 
         #trainer._tensorboard = TensorboardWriter(train_log=train_log, 
         #                                        validation_log=validation_log)
@@ -201,7 +202,7 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
 
     #print('done')
     #print('finish')
-    #print(f'{interesting_metrics}')
+    print(f'{interesting_metrics}')
     #print(f'{time.time() - t}')
 
 
