@@ -4,6 +4,7 @@ from pathlib import Path
 import tempfile
 from typing import List, Tuple
 import random
+import shutil
 
 from allennlp.common.file_utils import cached_path
 from allennlp.data.dataset_readers import Conll2003DatasetReader
@@ -168,31 +169,36 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
     iterator = BucketIterator(batch_size=64, sorting_keys=[("tokens", "num_tokens")])
     iterator.index_with(vocab)
 
-    with tempfile.TemporaryDirectory(dir=Path(data_dir)) as temp_dir:
-        set_random_env(cuda_device, random_seed, numpy_seed, torch_seed)
-        trainer = Trainer(model=model, grad_clipping=5.0, 
-                        learning_rate_scheduler=schedule,
-                        serialization_dir=temp_dir,
-                        optimizer=optimizer,
-                        iterator=iterator,
-                        train_dataset=train_dataset,
-                        validation_dataset=dev_dataset,
-                        shuffle=True,
-                        cuda_device=cuda_device,
-                        patience=5,
-                        num_epochs=1000)
+    data_dir_fp = str(data_dir.resolve())
+    temp_dir_path = tempfile.TemporaryDirectory(dir=data_dir_fp)
+    temp_dir = temp_dir_path.name
+    
+    set_random_env(cuda_device, random_seed, numpy_seed, torch_seed)
+    trainer = Trainer(model=model, grad_clipping=5.0, 
+                    learning_rate_scheduler=schedule,
+                    serialization_dir=temp_dir,
+                    optimizer=optimizer,
+                    iterator=iterator,
+                    train_dataset=train_dataset,
+                    validation_dataset=dev_dataset,
+                    shuffle=True,
+                    cuda_device=cuda_device,
+                    patience=5,
+                    num_epochs=1000)
 
-        #trainer._tensorboard = TensorboardWriter(train_log=train_log, 
-        #                                        validation_log=validation_log)
-        interesting_metrics = trainer.train()
-        best_model_weights = Path(temp_dir, 'best.th')
-        best_model_state = torch.load(best_model_weights)
-        model.load_state_dict(best_model_state)
-        test_result = evaluate(model, test_dataset, iterator, cuda_device)
-        dev_result = evaluate(model, dev_dataset, iterator, cuda_device)
-        test_f1 = test_result['f1-measure-overall']
-        dev_f1 = dev_result['f1-measure-overall']
-        result_data.append((dev_f1, test_f1, char_encoder))
+    #trainer._tensorboard = TensorboardWriter(train_log=train_log, 
+    #                                        validation_log=validation_log)
+    interesting_metrics = trainer.train()
+    best_model_weights = Path(temp_dir, 'best.th')
+    best_model_state = torch.load(best_model_weights)
+    model.load_state_dict(best_model_state)
+    test_result = evaluate(model, test_dataset, iterator, cuda_device)
+    dev_result = evaluate(model, dev_dataset, iterator, cuda_device)
+    test_f1 = test_result['f1-measure-overall']
+    dev_f1 = dev_result['f1-measure-overall']
+    result_data.append((dev_f1, test_f1, char_encoder))
+
+    shutil.rmtree(temp_dir)
 
     with result_fp.open('w+') as json_file:
         json.dump(result_data, json_file)
