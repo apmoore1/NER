@@ -40,7 +40,7 @@ def set_random_env(cuda: int, random_seed: int, numpy_seed: int,
         torch.cuda.manual_seed_all(torch_seed)
 
 def predict(cuda_device: int, char_encoder: str, data_dir: Path,
-            glove_path: Path, random_seed: int = 13370, 
+            glove_path: Path, temp_dir: Path, random_seed: int = 13370, 
             numpy_seed: int = 1337, torch_seed: int = 133
             ) -> List[Tuple[float, float, str]]:
     '''
@@ -169,14 +169,13 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
     iterator = BucketIterator(batch_size=64, sorting_keys=[("tokens", "num_tokens")])
     iterator.index_with(vocab)
 
-    data_dir_fp = str(data_dir.resolve())
-    temp_dir_path = tempfile.TemporaryDirectory(dir=data_dir_fp)
-    temp_dir = temp_dir_path.name
+    temp_dir_fp = str(temp_dir.resolve())
+    temp_folder_path = tempfile.mkdtemp(dir=temp_dir_fp)
     
     set_random_env(cuda_device, random_seed, numpy_seed, torch_seed)
     trainer = Trainer(model=model, grad_clipping=5.0, 
                     learning_rate_scheduler=schedule,
-                    serialization_dir=temp_dir,
+                    serialization_dir=temp_folder_path,
                     optimizer=optimizer,
                     iterator=iterator,
                     train_dataset=train_dataset,
@@ -189,7 +188,7 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
     #trainer._tensorboard = TensorboardWriter(train_log=train_log, 
     #                                        validation_log=validation_log)
     interesting_metrics = trainer.train()
-    best_model_weights = Path(temp_dir, 'best.th')
+    best_model_weights = Path(temp_folder_path, 'best.th')
     best_model_state = torch.load(best_model_weights)
     model.load_state_dict(best_model_state)
     test_result = evaluate(model, test_dataset, iterator, cuda_device)
@@ -197,8 +196,6 @@ def predict(cuda_device: int, char_encoder: str, data_dir: Path,
     test_f1 = test_result['f1-measure-overall']
     dev_f1 = dev_result['f1-measure-overall']
     result_data.append((dev_f1, test_f1, char_encoder))
-
-    shutil.rmtree(temp_dir)
 
     with result_fp.open('w+') as json_file:
         json.dump(result_data, json_file)
@@ -230,6 +227,8 @@ if __name__ == '__main__':
     parser.add_argument("char_encoder", help="Character encoder to use", 
                         type=str, choices=['lstm', 'cnn'])
     parser.add_argument("num_runs", help=num_runs_help, type=int)
+    parser.add_argument("temp_dir", help='Directory to store temp directories',
+                        type=parse_path)
     parser.add_argument("--cuda", action="store_true")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
@@ -238,6 +237,7 @@ if __name__ == '__main__':
     glove_fp = args.glove_file
     char_encoder = args.char_encoder
     num_runs = args.num_runs
+    temp_dir = args.temp_dir
     cuda = -1
     if args.cuda:
         cuda = 0
@@ -251,8 +251,8 @@ if __name__ == '__main__':
         random_seed = random_seeds[run]
         numpy_seed = numpy_seeds[run]
         torch_seed = torch_seeds[run]
-        result = predict(cuda, char_encoder, data_dir, glove_fp, random_seed,
-                         numpy_seed, torch_seed)
+        result = predict(cuda, char_encoder, data_dir, glove_fp, temp_dir,
+                         random_seed, numpy_seed, torch_seed)
         if args.verbose:
             print(f'Run {run} completed. Results so far:\n{result}')
     if args.verbose:
