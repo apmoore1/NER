@@ -37,8 +37,8 @@ def compare_stats(stat_result_0: Dict[str, float],
             compare_result_0[field_name] = 1
             compare_result_1[field_name] = 0
         elif field_value_0 == field_value_1:
-            raise ValueError('Cannot have the same value, result0:'
-                             f' {field_value_0}\nresults1: {field_value_1}')
+            compare_result_0[field_name] = 0
+            compare_result_1[field_name] = 0
         else:
             compare_result_0[field_name] = 0
             compare_result_1[field_name] = 1
