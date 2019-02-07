@@ -81,13 +81,17 @@ if __name__ == '__main__':
     encoder_stats = defaultdict(lambda: defaultdict(lambda: 0))
     for i in range(0, 200):
         copy_dir = Path(args.data_dir, f'{i}')
-        for copy_dir_files in copy_dir.iterdir():
-            file_name = copy_dir_files.name
-            if file_name == 'results.json':
-                break
-        else:
-            continue
-        encoders = ('lstm', 'cnn')
-        compare_results(copy_dir, encoders, encoder_stats)
-    print(encoder_stats)
-    
+        if copy_dir.exists():
+            for copy_dir_files in copy_dir.iterdir():
+                file_name = copy_dir_files.name
+                if file_name == 'results.json':
+                    break
+            else:
+                continue
+            encoders = ('lstm', 'cnn')
+            compare_results(copy_dir, encoders, encoder_stats)
+    for encoder, stats in encoder_stats.items():
+        print(f'Enocder {encoder} stats:')
+        for stat_name, stat in stats.items():
+            print(f'{stat_name}: {stat}')
+        print('\n')
