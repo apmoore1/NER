@@ -248,12 +248,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     data_dir_help = "The directory that stores the train, dev, and test "\
                     "files for the CoNLL 2003 dataset"
-    glove_help = "The path to the 100 dimension Glove Embedding"
     copy_dir_help = "Path to store all of the copy directories within"
     num_copies_help = "The number of copy directories to create"
 
     parser.add_argument("data_dir", help=data_dir_help, type=parse_path)
-    #parser.add_argument("glove_file", help=glove_help, type=parse_path)
     parser.add_argument("copy_dir", help=copy_dir_help, type=parse_path)
     parser.add_argument("num_copies", help=num_copies_help, type=int)
     args = parser.parse_args()
@@ -270,16 +268,6 @@ if __name__ == '__main__':
     assert len(test_data) == 3453
     all_data = train_data + dev_data + test_data
     assert len(all_data) == (14041 + 3250 + 3453)
-    #train, dev, test = shuffle_data(all_data)
-    #print(f'{len(train)} {len(dev)} {len(test)}')
-    #print(train[0])
-    #print()
-    #print(dev[0])
-    #print()
-    #print(test[0])
-    #data_to_file(train, Path(data_dir, 'new_train.txt'))
-    #data_to_file(dev, Path(data_dir, 'new_dev.txt'))
-    #data_to_file(test, Path(data_dir, 'new_test.txt'))
 
     create_n_dataset_folders(data_dir, num_copy_directories, copy_dir)
     num_identical_copies = len(test_n_dataset_folders(copy_dir))
