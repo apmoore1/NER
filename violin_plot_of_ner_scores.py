@@ -71,6 +71,8 @@ if __name__ == '__main__':
                 f1_scores.append(f1_value)
                 encoder_names.append(encoder)
                 training_method_names.append(train_method_name)
+            print(f'Number of results: {len(f1_values)} for encoder: {encoder}'
+                  f' on training method: {train_method_name}')
     all_data = pd.DataFrame({'F1': f1_scores, 'Encoder': encoder_names, 
                              'Training Method': training_method_names})
     ax = sns.violinplot(y="F1", x="Training Method", hue="Encoder",
