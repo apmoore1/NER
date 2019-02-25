@@ -33,7 +33,7 @@ After creating 150 new random datasets we run the 2 models 5 times using a diffe
 
 The results from our experiments can be found in `./results/ner_dataset_and_random_seeds.json` of which this single results file can be genererated from all of the different dataset results files be using the following script:
 
-`python join_dataset_results.py ./copy`
+`python join_dataset_results.py ./copy ./results/ner_dataset_and_random_seeds.json`
 
 ### Note to self
 A problem with the code is the following. Running the results for only seeds 250 times is bad as it runs out of space within the removal directory therefore it is better to run the code in multiples of 5 and removing the temporary directory each time and re-creating it.
