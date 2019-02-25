@@ -39,11 +39,15 @@ The results from our experiments can be found in `./results/ner_dataset_and_rand
 
 The visulisation is saved in the `./image` directory, of which the violin plot showing the difference between the distribution of changing just the random seed and not the data split for the CNN and LSTM model compared to changing the random seed and data splits for the two models can be produced using the following command:
 
-`python violin_plot_of_ner_scores.py ./results/ner_random_seeds.json ./results/ner_dataset_and_random_seeds.json ./image/ner_violin_plot.png test --remove_bottom_5`
+`python violin_plot_of_ner_scores.py ./results/ner_random_seeds.json ./results/ner_dataset_and_random_seeds.json ./image/ner_violin_plot.png test 0 --remove_bottom_5`
+
+To get the exact plot in the paper which shows 3 additional violin plots for fixed data split but different random seed run the following command:
+
+`python violin_plot_of_ner_scores.py ./results/ner_random_seeds.json ./results/ner_dataset_and_random_seeds.json ./image/ner_violin_plot_with_fixed.png test 3 --remove_bottom_5`
 
 The violin plot shows all the results but the bottom five results for each encoder on each of the result sets, this is due to some of the methods not converaging. To create the non removed plot run the following command:
 
-`python violin_plot_of_ner_scores.py ./results/ner_random_seeds.json ./results/ner_dataset_and_random_seeds.json ./image/ner_violin_plot_bottom_5.png test`
+`python violin_plot_of_ner_scores.py ./results/ner_random_seeds.json ./results/ner_dataset_and_random_seeds.json ./image/ner_violin_plot_bottom_5.png test 0`
 
 ### Note to self
 A problem with the code is the following. Running the results for only seeds 250 times is bad as it runs out of space within the removal directory therefore it is better to run the code in multiples of 5 and removing the temporary directory each time and re-creating it.
