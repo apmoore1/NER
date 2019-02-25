@@ -26,7 +26,7 @@ if __name__ == '__main__':
             continue
         sub_folder_results_fp = Path(sub_folder, 'results.json').resolve()
         with sub_folder_results_fp.open('r') as results:
-            all_results.extend(json.load(results))
+            all_results.append(json.load(results))
     with args.result_file.open('w+') as result_file:
         json.dump(all_results, result_file)
     

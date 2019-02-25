@@ -61,8 +61,14 @@ if __name__ == '__main__':
         train_method_name, result_fp = train_method_result
         with result_fp.open('r') as result_file:
             results = json.load(result_file)
-            f1_values = get_encoder_results(results, encoder, 
-                                            args.val_or_test_split)
+            if train_method_name == 'Seed and Data split':
+                f1_values = []
+                for result in results:
+                    f1_values.extend(get_encoder_results(result, encoder, 
+                                                         args.val_or_test_split))
+            else:
+                f1_values = get_encoder_results(results, encoder, 
+                                                args.val_or_test_split)
             # Remove the bottom 5 results for each encoder on each train method
             # as some results did not converage as well.
             if args.remove_bottom_5:
