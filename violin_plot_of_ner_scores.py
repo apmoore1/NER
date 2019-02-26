@@ -110,7 +110,7 @@ if __name__ == '__main__':
         
         large_data = all_data[all_data['Training Method'].isin(large_data_plot_names)]
         small_data = all_data[~all_data['Training Method'].isin(large_data_plot_names)]
-        fig, axs = plt.subplots(1, 2, sharey=True, sharex=False)
+        fig, axs = plt.subplots(1, 2, sharey=True, sharex=False, gridspec_kw = {'width_ratios':[1, 2]})
         axs[0] = sns.violinplot(y="F1", x="Training Method", hue="Encoder",
                                data=large_data, inner="quartiles", split=True, ax=axs[0])
         axs[1] = sns.violinplot(y="F1", x="Training Method", hue="Encoder",
@@ -119,7 +119,6 @@ if __name__ == '__main__':
         axs[0].get_legend().remove()
         axs[1].set_xlabel("")
         axs[1].set_ylabel("")
-        fig.set_figwidth(8.2)
         fig.savefig(str(plot_fp.resolve()), bbox_inches='tight')
     else:
         ax = sns.violinplot(y="F1", x="Training Method", hue="Encoder",
