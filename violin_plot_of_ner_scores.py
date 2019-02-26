@@ -37,14 +37,10 @@ def parse_path(path_string: str) -> Path:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    seeds_result_help = "File path to results where the models were trained "\
-                        "on different random seeds"
     data_seeds_result_help = "File path to results where the models were "\
                              "trained on different data splits and random seeds"
     no_data_splits_help = "Number of extra plots showing the affect of "\
                           "different random seeds but on the same dataset."
-    parser.add_argument("seeds_result_fp", help=seeds_result_help, 
-                        type=parse_path)
     parser.add_argument("data_seeds_result_fp", help=data_seeds_result_help,
                         type=parse_path)
     parser.add_argument("plot_fp", help="File path to the plot",
@@ -59,8 +55,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     encoders = ["CNN", "LSTM"]
-    training_methods_and_results = [('Seed and Data split', args.data_seeds_result_fp),
-                                    ('Seed', args.seeds_result_fp)]
+    training_methods_and_results = [('Varying Seed and Split', args.data_seeds_result_fp)]
     encoder_and_folder = product(encoders, training_methods_and_results)
 
     f1_scores = []
@@ -70,7 +65,7 @@ if __name__ == '__main__':
         train_method_name, result_fp = train_method_result
         with result_fp.open('r') as result_file:
             results = json.load(result_file)
-            if train_method_name == 'Seed and Data split':
+            if train_method_name == 'Varying Seed and Split':
                 f1_values = []
                 for result in results:
                     f1_values.extend(get_encoder_results(result, encoder, 
@@ -85,8 +80,8 @@ if __name__ == '__main__':
             for f1_value in f1_values:
                 f1_scores.append(f1_value)
                 encoder_names.append(encoder)
-                if train_method_name == 'Seed and Data split':
-                    training_method_names.append('Seed and\nData split')
+                if train_method_name == 'Varying Seed and Split':
+                    training_method_names.append('Varying Seed\nand Split')
                 else:
                     training_method_names.append(train_method_name)
             print(f'Number of results: {len(f1_values)} for encoder: {encoder}'
@@ -102,7 +97,7 @@ if __name__ == '__main__':
                     for f1_value in f1_values:
                         f1_scores.append(f1_value)
                         encoder_names.append(encoder)
-                        training_method_names.append(f'Fixed data\nsplit {i}')
+                        training_method_names.append(f'Varying Seed\nfixed split {i}')
                 
     all_data = pd.DataFrame({'F1': f1_scores, 'Encoder': encoder_names, 
                              'Training Method': training_method_names})
@@ -111,7 +106,7 @@ if __name__ == '__main__':
     plot_fp.touch()
 
     if args.no_data_splits > 0:
-        large_data_plot_names = ['Seed and\nData split', 'Seed']
+        large_data_plot_names = ['Varying Seed\nand Split']
         
         large_data = all_data[all_data['Training Method'].isin(large_data_plot_names)]
         small_data = all_data[~all_data['Training Method'].isin(large_data_plot_names)]
@@ -124,14 +119,15 @@ if __name__ == '__main__':
         axs[0].get_legend().remove()
         axs[1].set_xlabel("")
         axs[1].set_ylabel("")
-        fig.savefig(str(plot_fp.resolve()))
+        fig.set_figwidth(8.2)
+        fig.savefig(str(plot_fp.resolve()), bbox_inches='tight')
     else:
         ax = sns.violinplot(y="F1", x="Training Method", hue="Encoder",
                             data=all_data, inner="quartiles", split=True)
         ax.set_xlabel("")
         fig = ax.figure
         fig.set_figwidth(5)
-        fig.savefig(str(plot_fp.resolve()))
+        fig.savefig(str(plot_fp.resolve()), bbox_inches='tight')
 
 
 
