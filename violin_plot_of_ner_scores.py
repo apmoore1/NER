@@ -97,9 +97,9 @@ if __name__ == '__main__':
                     for f1_value in f1_values:
                         f1_scores.append(f1_value)
                         encoder_names.append(encoder)
-                        training_method_names.append(f'Varying Seed\nfixed split {i}')
+                        training_method_names.append(f'Varying Seed\nFixed Split {i}')
                 
-    all_data = pd.DataFrame({'F1': f1_scores, 'Encoder': encoder_names, 
+    all_data = pd.DataFrame({'F1': f1_scores, 'Character\nRepresentation': encoder_names, 
                              'Training Method': training_method_names})
     
     plot_fp: Path = args.plot_fp
@@ -111,9 +111,9 @@ if __name__ == '__main__':
         large_data = all_data[all_data['Training Method'].isin(large_data_plot_names)]
         small_data = all_data[~all_data['Training Method'].isin(large_data_plot_names)]
         fig, axs = plt.subplots(1, 2, sharey=True, sharex=False, gridspec_kw = {'width_ratios':[1, 2]})
-        axs[0] = sns.violinplot(y="F1", x="Training Method", hue="Encoder",
+        axs[0] = sns.violinplot(y="F1", x="Training Method", hue="Character\nRepresentation",
                                data=large_data, inner="quartiles", split=True, ax=axs[0])
-        axs[1] = sns.violinplot(y="F1", x="Training Method", hue="Encoder",
+        axs[1] = sns.violinplot(y="F1", x="Training Method", hue="Character\nRepresentation",
                                data=small_data, inner="stick", split=True, ax=axs[1])
         axs[0].set_xlabel("")
         axs[0].get_legend().remove()
@@ -121,7 +121,7 @@ if __name__ == '__main__':
         axs[1].set_ylabel("")
         fig.savefig(str(plot_fp.resolve()), bbox_inches='tight')
     else:
-        ax = sns.violinplot(y="F1", x="Training Method", hue="Encoder",
+        ax = sns.violinplot(y="F1", x="Training Method", hue="Character\nRepresentation",
                             data=all_data, inner="quartiles", split=True)
         ax.set_xlabel("")
         fig = ax.figure
